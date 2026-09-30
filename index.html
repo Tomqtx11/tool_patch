@@ -114,7 +114,7 @@
 
         textarea {
             width: 100%;
-            height: 200px;
+            height: 250px;
             background-color: #0f172a;
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -240,7 +240,7 @@
                 <button class="example-btn" onclick="loadExample()">Tải Danh Sách Offset Mẫu</button>
             </div>
             <div class="textarea-group">
-                <textarea id="patchInput" placeholder="Định dạng: <Offset> <Hex_Bytes> (Mỗi dòng 1 offset)&#10;&#10;Ví dụ:&#10;0x554b9ec: 200080D2 C0035FD6 // Cam xa iPad 3 nấc&#10;0x61bd328: 1F2003D5          // Hiện Rank&#10;0x5ecbadc: 1F2003D5          // Hiện Bổ trợ"></textarea>
+                <textarea id="patchInput" placeholder="Định dạng: <Offset>: <Hex_Bytes> (Mỗi dòng 1 offset)&#10;&#10;Ví dụ:&#10;0x4a380e8: 220080D2 1F2003D5 // Hack Map sáng&#10;0x554b9ec: 200080D2 C0035FD6 // Cam iPad 3 nấc&#10;0x61bd328: 1F2003D5          // Hiện Rank"></textarea>
                 <div class="hint">
                     * Hỗ trợ các định dạng dòng: <code>0x554b9ec: 200080D2 C0035FD6</code> hoặc <code>0x554b9ec 200080D2C0035FD6</code>
                 </div>
@@ -335,29 +335,34 @@
         }
 
         function loadExample() {
-            const exampleText = `// ==========================================
-// 1. CAM XA 3 NẤC & GÓC RỘNG IPAD
-// ==========================================
-0x554b9ec: 200080D2 C0035FD6 // GameSettings_IsIPadDevice (Bật Cam iPad 3 nấc rộng)
-0x5561e44: 200080D2 C0035FD6 // GameSettings_CameraHeight_IOS (Cập nhật độ cao Cam rộng)
+            const exampleText = `// 1. HACK MAP (MAP SÁNG)
+0x4a380e8: 220080D2 1F2003D5 // LVActorLinker_SetVisible (Gán bVisible = true)
 
-// ==========================================
-// 2. HIỆN RANK & HIỆN BỔ TRỢ & CD TRẠNG THÁI CHIÊU
-// ==========================================
+// 2. CAM 3 NẤC (CAM IPAD RỘNG - CÀI ĐẶT 3 NẤC GẦN/VỪA/XA TRONG GAME)
+0x554b9ec: 200080D2 C0035FD6 // GameSettings_IsIPadDevice (Bật Cam iPad 3 nấc)
+0x5561e44: 200080D2 C0035FD6 // GameSettings_CameraHeight_IOS (Tăng độ nét chiều cao Cam rộng)
+0x540f2c8: C0035FD6          // CameraSystem_OnCameraHeightChanged (Cho phép chỉnh 3 nấc mượt)
+
+// 3. HIỆN UNTY ĐỊCH (TRẠNG THÁI & HỒI CHIÊU CHIÊU CUỐI)
+0x5f1c2b4: 1F2003D5          // Ulti1_ (Bật nhận diện trạng thái Chiêu 1 & Ulti)
+0x5f1c3ac: 330080D2          // Ulti2_ (Cập nhật thời gian hồi chiêu cuối)
+
+// 4. HIỆN BỔ TRỢ ĐỊCH
+0x5ecbadc: 1F2003D5          // Botro_ (Bật hiển thị cờ/thông tin bổ trợ)
+
+// 5. HIỆN RANK (KHUNG RANK MÀN HÌNH TẢI TRẬN)
 0x61bd328: 1F2003D5          // ShowRank_ (Mở hiển thị Rank trên khung tải trận)
-0x5ecbadc: 1F2003D5          // Botro_ (Bật hiển thị thông tin bổ trợ)
-0x5f1c2b4: 1F2003D5          // Ulti1_ (Bật nhận diện trạng thái Chiêu 1/Chiêu cuối)
-0x5f1c3ac: 330080D2          // Ulti2_ (Cập nhật trạng thái đếm hồi chiêu)
 
-// ==========================================
-// 3. MỞ KHÓA FPS & CHẶN BLOCK UPDATE
-// ==========================================
-0x55621f8: 200080D2 C0035FD6 // Mở khóa 60FPS / 120FPS
-0x73b736c: C0035FD6          // Block_Update (Chặn tải/cập nhật dlc file)
+// 6. HIỆN LỊCH SỬ TRẬN ĐẤU (XEM LSĐ ẨN)
+0x5adf5a8: 200080D2 C0035FD6 // CPlayerProfile_get_IsHostProfile (Xem profile & LSĐ ẩn)
 
-// ==========================================
-// 4. BYPASS ANTI DETECTION (CHẶN BẢO MẬT GỐC)
-// ==========================================
+// 7. MỞ KHÓA FPS 60 / 120
+0x55621f8: 200080D2 C0035FD6 // GameSettings_CheckDeviceSupport60FPSConfig (Bật 60/120 FPS)
+
+// 8. CHẶN UPDATE (BLOCK DLC DOWNLOAD)
+0x73b736c: C0035FD6          // Block_Update (Chặn tự động tải/cập nhật dlc)
+
+// 9. BYPASS ANTI DETECTION (CHẶN BẢO MẬT GỐC)
 0x5a78334: C0035FD6 // Anti_1
 0x4bf89bc: C0035FD6 // Anti_2
 0x4bf90a0: C0035FD6 // Anti_3
@@ -368,7 +373,7 @@
 0x4d9a320: C0035FD6 // Anti_8`;
             document.getElementById('patchInput').value = exampleText;
             clearLog();
-            log(`Đã tải danh sách offset mẫu vào ô nhập.`, 'info');
+            log(`Đã tải danh sách offset đầy đủ mẫu vào ô nhập.`, 'info');
         }
 
         function parseHexBytes(hexStr) {
@@ -395,7 +400,6 @@
                 return;
             }
 
-            // TỰ ĐỘNG XÓA LOG CŨ MỖI LẦN BẮT ĐẦU PATCH MỚI
             clearLog();
 
             const startTime = new Date();
@@ -460,7 +464,6 @@
             const endTime = new Date();
             const timeDiff = ((endTime - startTime) / 1000).toFixed(2);
 
-            // XUẤT BÁO CÁO TỔNG HỢP RÕ RÀNG VÀO LOG
             if (patchedCount > 0) {
                 const outputName = downloadFile(patchedBuffer, loadedFile.name);
                 logHtml(`
