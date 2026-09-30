@@ -240,7 +240,7 @@
                 <button class="example-btn" onclick="loadExample()">Tải Danh Sách Offset Mẫu</button>
             </div>
             <div class="textarea-group">
-                <textarea id="patchInput" placeholder="Định dạng: <Offset>: <Hex_Bytes> (Mỗi dòng 1 offset)&#10;&#10;Ví dụ:&#10;0x4a380e8: 220080D2 1F2003D5 // Hack Map sáng&#10;0x554b9ec: 200080D2 C0035FD6 // Cam iPad 3 nấc&#10;0x61bd328: 1F2003D5          // Hiện Rank"></textarea>
+                <textarea id="patchInput" placeholder="Định dạng: <Offset>: <Hex_Bytes> (Mỗi dòng 1 offset)&#10;&#10;Ví dụ:&#10;0x554b9ec: 200080D2 C0035FD6 // Cam iPad 3 nấc&#10;0x5adf5a8: 200080D2 C0035FD6 // Xem Lịch sử đấu ẩn"></textarea>
                 <div class="hint">
                     * Hỗ trợ các định dạng dòng: <code>0x554b9ec: 200080D2 C0035FD6</code> hoặc <code>0x554b9ec 200080D2C0035FD6</code>
                 </div>
@@ -335,34 +335,19 @@
         }
 
         function loadExample() {
-            const exampleText = `// 1. HACK MAP (MAP SÁNG)
-0x4a380e8: 220080D2 1F2003D5 // LVActorLinker_SetVisible (Gán bVisible = true)
+            const exampleText = `// 1. CAM IPAD 3 NẤC & GÓC RỘNG (AN TOÀN 100%)
+0x554b9ec: 200080D2 C0035FD6 // GameSettings_IsIPadDevice (Mở góc nhìn Cam iPad 3 nấc)
+0x5561e44: 200080D2 C0035FD6 // GameSettings_CameraHeight_IOS (Tăng độ nét chiều cao)
+0x540f2c8: C0035FD6          // CameraSystem_OnCameraHeightChanged (Chỉnh 3 nấc mượt)
 
-// 2. CAM 3 NẤC (CAM IPAD RỘNG - CÀI ĐẶT 3 NẤC GẦN/VỪA/XA TRONG GAME)
-0x554b9ec: 200080D2 C0035FD6 // GameSettings_IsIPadDevice (Bật Cam iPad 3 nấc)
-0x5561e44: 200080D2 C0035FD6 // GameSettings_CameraHeight_IOS (Tăng độ nét chiều cao Cam rộng)
-0x540f2c8: C0035FD6          // CameraSystem_OnCameraHeightChanged (Cho phép chỉnh 3 nấc mượt)
+// 2. HIỆN LỊCH SỬ TRẬN ĐẤU (XEM PROFILES & LSĐ ẨN)
+0x5adf5a8: 200080D2 C0035FD6 // CPlayerProfile_get_IsHostProfile (Xem Lịch sử đấu ẩn)
 
-// 3. HIỆN UNTY ĐỊCH (TRẠNG THÁI & HỒI CHIÊU CHIÊU CUỐI)
-0x5f1c2b4: 1F2003D5          // Ulti1_ (Bật nhận diện trạng thái Chiêu 1 & Ulti)
-0x5f1c3ac: 330080D2          // Ulti2_ (Cập nhật thời gian hồi chiêu cuối)
-
-// 4. HIỆN BỔ TRỢ ĐỊCH
-0x5ecbadc: 1F2003D5          // Botro_ (Bật hiển thị cờ/thông tin bổ trợ)
-
-// 5. HIỆN RANK (KHUNG RANK MÀN HÌNH TẢI TRẬN)
-0x61bd328: 1F2003D5          // ShowRank_ (Mở hiển thị Rank trên khung tải trận)
-
-// 6. HIỆN LỊCH SỬ TRẬN ĐẤU (XEM LSĐ ẨN)
-0x5adf5a8: 200080D2 C0035FD6 // CPlayerProfile_get_IsHostProfile (Xem profile & LSĐ ẩn)
-
-// 7. MỞ KHÓA FPS 60 / 120
+// 3. MỞ KHÓA FPS 60 / 120 & CHẶN UPDATE
 0x55621f8: 200080D2 C0035FD6 // GameSettings_CheckDeviceSupport60FPSConfig (Bật 60/120 FPS)
+0x73b736c: C0035FD6          // Block_Update (Chặn tự động tải dlc)
 
-// 8. CHẶN UPDATE (BLOCK DLC DOWNLOAD)
-0x73b736c: C0035FD6          // Block_Update (Chặn tự động tải/cập nhật dlc)
-
-// 9. BYPASS ANTI DETECTION (CHẶN BẢO MẬT GỐC)
+// 4. BYPASS ANTI DETECTION (CHẶN BẢO MẬT GỐC)
 0x5a78334: C0035FD6 // Anti_1
 0x4bf89bc: C0035FD6 // Anti_2
 0x4bf90a0: C0035FD6 // Anti_3
@@ -479,7 +464,7 @@
             } else {
                 logHtml(`
                     <div class="report-box error">
-                        <strong>❌ THẤT BẠI:</strong> Không có offset nào được patch thành công. Vui lòng kiểm tra lại dữ liệu nhập.
+                        <strong>❌ THẤT BẠI:</strong> Không có offset nào me patch thành công. Vui lòng kiểm tra lại dữ liệu nhập.
                     </div>
                 `);
                 log(`Tiến trình thất bại.`, 'error');
