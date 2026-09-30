@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Hex Patcher Tool - Tự Động Patch Binary / UnityFramework</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-mono: 'Fira Code', 'Consolas', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: rgba(15, 23, 42, 0.5);
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: none;
+            word-break: break-all;
+        }
+
+        .textarea-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #38bdf8;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            padding: 0.75rem;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            background-color: #475569;
+            cursor: not-allowed;
+        }
+
+        .console {
+            background-color: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .log-item {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .log-info { color: #38bdf8; }
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-warning { color: #fbbf24; }
+
+        .report-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.5rem;
+            color: #f8fafc;
+            line-height: 1.6;
+        }
+
+        .report-box.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .example-btn {
+            background: none;
+            border: none;
+            color: #60a5fa;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Binary Hex Patcher Tool</h1>
+            <p>Công cụ vá file UnityFramework / Executable trực tiếp trên Trình Duyệt (Siêu nhanh, bảo mật 100%)</p>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="card">
+            <div class="card-title">
+                1. Chọn File Binary (UnityFramework / Executable)
+            </div>
+            <div class="drop-zone" id="dropZone">
+                <p>Kéo & thả file vào đây hoặc <strong style="color: var(--primary)">Nhấp để chọn file</strong></p>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">(Xử lý trực tiếp trên RAM máy bạn, không upload tải file lên máy chủ)</p>
+                <input type="file" id="fileInput">
+            </div>
+            <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <!-- Offsets & Hex Bytes Section -->
+        <div class="card">
+            <div class="card-title" style="justify-content: space-between;">
+                <span>2. Nhập Danh Sách Offset & Mã Byte Hex</span>
+                <button class="example-btn" onclick="loadExample()">Tải Danh Sách Offset Mẫu</button>
+            </div>
+            <div class="textarea-group">
+                <textarea id="patchInput" placeholder="Định dạng: <Offset> <Hex_Bytes> (Mỗi dòng 1 offset)&#10;&#10;Ví dụ:&#10;0x554b9ec: 200080D2 C0035FD6 // Cam xa iPad 3 nấc&#10;0x61bd328: 1F2003D5          // Hiện Rank&#10;0x5ecbadc: 1F2003D5          // Hiện Bổ trợ"></textarea>
+                <div class="hint">
+                    * Hỗ trợ các định dạng dòng: <code>0x554b9ec: 200080D2 C0035FD6</code> hoặc <code>0x554b9ec 200080D2C0035FD6</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <button class="btn" id="patchBtn" onclick="processPatch()" disabled>
+            Bắt Đầu Patch & Tải File Về
+        </button>
+
+        <!-- Log Output -->
+        <div class="card">
+            <div class="card-title">3. Nhật Ký Tiến Trình & Báo Cáo (Log)</div>
+            <div class="console" id="consoleLog">
+                <div class="log-item log-info">[Hệ thống] Sẵn sàng. Vui lòng chọn file binary và nhập danh sách offset.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let loadedFile = null;
+        let fileArrayBuffer = null;
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const patchBtn = document.getElementById('patchBtn');
+        const consoleLog = document.getElementById('consoleLog');
+
+        // Setup Drag & Drop
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function clearLog() {
+            consoleLog.innerHTML = '';
+        }
+
+        function log(message, type = 'info') {
+            const item = document.createElement('div');
+            item.className = `log-item log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            item.innerText = `[${timestamp}] ${message}`;
+            consoleLog.appendChild(item);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function logHtml(htmlContent) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = htmlContent;
+            consoleLog.appendChild(wrapper);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function handleFileSelect(file) {
+            loadedFile = file;
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            fileInfo.style.display = 'block';
+            fileInfo.innerHTML = `<strong>File đã chọn:</strong> ${file.name} (${fileSizeMB} MB)`;
+            
+            clearLog();
+            log(`Đã chọn file: ${file.name} (${fileSizeMB} MB)`, 'info');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                fileArrayBuffer = e.target.result;
+                log(`Đã nạp file vào bộ nhớ RAM thành công! Sẵn sàng patch.`, 'success');
+                patchBtn.disabled = false;
+            };
+            reader.onerror = function() {
+                log(`Lỗi khi đọc file!`, 'error');
+                patchBtn.disabled = true;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function loadExample() {
+            const exampleText = `// ==========================================
+// 1. CAM XA 3 NẤC & GÓC RỘNG IPAD
+// ==========================================
+0x554b9ec: 200080D2 C0035FD6 // GameSettings_IsIPadDevice (Bật Cam iPad 3 nấc rộng)
+0x5561e44: 200080D2 C0035FD6 // GameSettings_CameraHeight_IOS (Cập nhật độ cao Cam rộng)
+
+// ==========================================
+// 2. HIỆN RANK & HIỆN BỔ TRỢ & CD TRẠNG THÁI CHIÊU
+// ==========================================
+0x61bd328: 1F2003D5          // ShowRank_ (Mở hiển thị Rank trên khung tải trận)
+0x5ecbadc: 1F2003D5          // Botro_ (Bật hiển thị thông tin bổ trợ)
+0x5f1c2b4: 1F2003D5          // Ulti1_ (Bật nhận diện trạng thái Chiêu 1/Chiêu cuối)
+0x5f1c3ac: 330080D2          // Ulti2_ (Cập nhật trạng thái đếm hồi chiêu)
+
+// ==========================================
+// 3. MỞ KHÓA FPS & CHẶN BLOCK UPDATE
+// ==========================================
+0x55621f8: 200080D2 C0035FD6 // Mở khóa 60FPS / 120FPS
+0x73b736c: C0035FD6          // Block_Update (Chặn tải/cập nhật dlc file)
+
+// ==========================================
+// 4. BYPASS ANTI DETECTION (CHẶN BẢO MẬT GỐC)
+// ==========================================
+0x5a78334: C0035FD6 // Anti_1
+0x4bf89bc: C0035FD6 // Anti_2
+0x4bf90a0: C0035FD6 // Anti_3
+0x47edca8: C0035FD6 // Anti_4
+0x78b6d70: C0035FD6 // Anti_5
+0x78b6d00: C0035FD6 // Anti_6
+0x5cc137c: 000080D2 C0035FD6 // Anti_7
+0x4d9a320: C0035FD6 // Anti_8`;
+            document.getElementById('patchInput').value = exampleText;
+            clearLog();
+            log(`Đã tải danh sách offset mẫu vào ô nhập.`, 'info');
+        }
+
+        function parseHexBytes(hexStr) {
+            const cleanHex = hexStr.replace(/[^0-9a-fA-F]/g, '');
+            if (cleanHex.length % 2 !== 0) {
+                throw new Error(`Mã Hex byte lẻ (${cleanHex.length} ký tự hex): ${hexStr}`);
+            }
+            const bytes = new Uint8Array(cleanHex.length / 2);
+            for (let i = 0; i < cleanHex.length; i += 2) {
+                bytes[i / 2] = parseInt(cleanHex.substr(i, 2), 16);
+            }
+            return bytes;
+        }
+
+        function processPatch() {
+            if (!fileArrayBuffer || !loadedFile) {
+                alert("Vui lòng chọn file trước!");
+                return;
+            }
+
+            const inputContent = document.getElementById('patchInput').value.trim();
+            if (!inputContent) {
+                alert("Vui lòng nhập danh sách offset và byte Hex!");
+                return;
+            }
+
+            // TỰ ĐỘNG XÓA LOG CŨ MỖI LẦN BẮT ĐẦU PATCH MỚI
+            clearLog();
+
+            const startTime = new Date();
+            log(`🚀 BẮT ĐẦU TIẾN TRÌNH PATCH MỚI...`, 'info');
+            log(`File nguồn: ${loadedFile.name} (${(loadedFile.size / (1024 * 1024)).toFixed(2)} MB)`, 'info');
+
+            const patchedBuffer = new Uint8Array(fileArrayBuffer.slice(0));
+            const lines = inputContent.split('\n');
+
+            let patchedCount = 0;
+            let errorCount = 0;
+            let details = [];
+
+            lines.forEach((lineRaw, index) => {
+                let line = lineRaw.trim();
+                if (!line || line.startsWith('//') || line.startsWith('#')) return;
+
+                let comment = '';
+                if (line.includes('//')) {
+                    const parts = line.split('//');
+                    line = parts[0].trim();
+                    comment = parts.slice(1).join('//').trim();
+                }
+
+                try {
+                    let parts = line.split(/[:\s]+/).filter(Boolean);
+                    if (parts.length < 2) {
+                        throw new Error(`Cú pháp dòng không hợp lệ.`);
+                    }
+
+                    let offsetStr = parts[0];
+                    let hexBytesStr = parts.slice(1).join('');
+
+                    let offset = parseInt(offsetStr, 16);
+                    if (isNaN(offset)) {
+                        throw new Error(`Offset '${offsetStr}' không hợp lệ.`);
+                    }
+
+                    let patchBytes = parseHexBytes(hexBytesStr);
+
+                    if (offset + patchBytes.length > patchedBuffer.length) {
+                        throw new Error(`Offset 0x${offset.toString(16).toUpperCase()} vượt quá dung lượng file (${patchedBuffer.length} bytes)!`);
+                    }
+
+                    for (let b = 0; b < patchBytes.length; b++) {
+                        patchedBuffer[offset + b] = patchBytes[b];
+                    }
+
+                    patchedCount++;
+                    let hexPreview = Array.from(patchBytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                    let note = comment ? ` (${comment})` : '';
+                    log(`✓ [Thành công] Offset 0x${offset.toString(16).toUpperCase()} -> [ ${hexPreview} ]${note}`, 'success');
+                    details.push({ line: index + 1, offset: `0x${offset.toString(16).toUpperCase()}`, hex: hexPreview, status: 'OK', note });
+
+                } catch (err) {
+                    errorCount++;
+                    log(`✗ [Lỗi Dòng ${index + 1}] ${err.message}`, 'error');
+                    details.push({ line: index + 1, offset: 'Lỗi', hex: '', status: 'ERROR', note: err.message });
+                }
+            });
+
+            const endTime = new Date();
+            const timeDiff = ((endTime - startTime) / 1000).toFixed(2);
+
+            // XUẤT BÁO CÁO TỔNG HỢP RÕ RÀNG VÀO LOG
+            if (patchedCount > 0) {
+                const outputName = downloadFile(patchedBuffer, loadedFile.name);
+                logHtml(`
+                    <div class="report-box">
+                        <strong>📊 BÁO CÁO TỔNG HỢP TIẾN TRÌNH PATCH:</strong><br>
+                        • <strong>Thời gian hoàn tất:</strong> ${timeDiff} giây (${endTime.toLocaleTimeString()})<br>
+                        • <strong>Tổng số Offset đã Patch thành công:</strong> <span style="color: #4ade80; font-weight: bold;">${patchedCount}</span><br>
+                        • <strong>Số lượng Offset thất bại/lỗi:</strong> <span style="color: ${errorCount > 0 ? '#f87171' : '#94a3b8'}; font-weight: bold;">${errorCount}</span><br>
+                        • <strong>Tên file đã tạo & tải về:</strong> <code style="color: #38bdf8">${outputName}</code>
+                    </div>
+                `);
+                log(`🎉 Hoàn tất tiến trình! File patched đã được tự động tải về máy bạn.`, 'success');
+            } else {
+                logHtml(`
+                    <div class="report-box error">
+                        <strong>❌ THẤT BẠI:</strong> Không có offset nào được patch thành công. Vui lòng kiểm tra lại dữ liệu nhập.
+                    </div>
+                `);
+                log(`Tiến trình thất bại.`, 'error');
+            }
+        }
+
+        function downloadFile(uint8Array, originalName) {
+            const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            
+            const nameParts = originalName.split('.');
+            let outputName = "";
+            if (nameParts.length > 1) {
+                const ext = nameParts.pop();
+                outputName = `${nameParts.join('.')}_patched.${ext}`;
+            } else {
+                outputName = `${originalName}_patched`;
+            }
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = outputName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            return outputName;
+        }
+    </script>
+</body>
+</html>
