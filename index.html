@@ -375,7 +375,7 @@
             </button>
         </div>
 
-        <!-- TAB 1: BINARY PATCHER (GIỮ NGUYÊN 100% KHÔNG ĐỤNG VÀO) -->
+        <!-- TAB 1: BINARY PATCHER (GIỮ NGUYÊN 100% CODE GỐC BAN ĐẦU) -->
         <div class="tab-content active" id="tab-patcher">
             <!-- File Upload Section -->
             <div class="card">
@@ -418,7 +418,7 @@
             </div>
         </div>
 
-        <!-- TAB 2: LEAK OFFSET (SO SÁNH 2 FILE BINARY) -->
+        <!-- TAB 2: LEAK OFFSET (SO SÁNH STREAMING CHUNKED CHO FILE NẶNG UNITYFRAMEWORK) -->
         <div class="tab-content" id="tab-diff">
             <div class="grid-2">
                 <!-- File Gốc -->
@@ -441,6 +441,17 @@
                         <input type="file" id="fileInputMod">
                     </div>
                     <div class="file-info" id="fileInfoMod"></div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="diffProgressContainer" style="display: none; margin-top: 0.5rem;" class="card">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem;">
+                    <span id="diffProgressLabel" style="color: #60a5fa; font-weight: 600;">Đang quét so sánh từng phân đoạn file...</span>
+                    <span id="diffProgressPercent" style="color: #4ade80; font-weight: bold;">0%</span>
+                </div>
+                <div style="width: 100%; background: #0f172a; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <div id="diffProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #22c55e); transition: width 0.1s ease;"></div>
                 </div>
             </div>
 
@@ -761,10 +772,11 @@
         }
 
         // ====================================================================
-        // TAB 2: LEAK OFFSET (BINARY DIFF LOGIC DA TEST KY)
+        // TAB 2: LEAK OFFSET (STREAMING CHUNKED SO SÁNH FILE NẶNG UNITYFRAMEWORK)
+        // KHÔNG NẠP CẢ FILE VÀO RAM KHI CHỌN - ĐỌC THEO PHÂN ĐOẠN 10MB CHUNK
         // ====================================================================
-        let bufOrig = null, bufMod = null;
         let fileOrigObj = null, fileModObj = null;
+        let leakedBlocksResult = [];
 
         const dropZoneOrig = document.getElementById('dropZoneOrig');
         const fileInputOrig = document.getElementById('fileInputOrig');
@@ -807,143 +819,212 @@
         }
 
         function checkDiffReady() {
-            if (bufOrig && bufMod) {
-                diffBtn.disabled = false;
-            } else {
-                diffBtn.disabled = true;
-            }
+            diffBtn.disabled = !(fileOrigObj && fileModObj);
         }
 
         function handleSelectOrig(file) {
             fileOrigObj = file;
-            bufOrig = null;
-            checkDiffReady();
-
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
             fileInfoOrig.style.display = 'block';
-            fileInfoOrig.innerHTML = `<strong>File Gốc:</strong> ${file.name} (${sizeMB} MB)`;
+            fileInfoOrig.innerHTML = `<strong>File Gốc:</strong> ${file.name} (${sizeMB} MB) <span style="color: #4ade80;">✓ Đã sẵn sàng</span>`;
             logDiff(`Đã chọn File Gốc: ${file.name} (${sizeMB} MB)`, 'info');
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                bufOrig = e.target.result;
-                logDiff(`Đã nạp File Gốc vào bộ nhớ RAM thành công.`, 'success');
-                checkDiffReady();
-            };
-            reader.onerror = () => {
-                logDiff(`Lỗi khi nạp File Gốc!`, 'error');
-                checkDiffReady();
-            };
-            reader.readAsArrayBuffer(file);
+            checkDiffReady();
         }
 
         function handleSelectMod(file) {
             fileModObj = file;
-            bufMod = null;
-            checkDiffReady();
-
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
             fileInfoMod.style.display = 'block';
-            fileInfoMod.innerHTML = `<strong>File Đã Sửa:</strong> ${file.name} (${sizeMB} MB)`;
+            fileInfoMod.innerHTML = `<strong>File Đã Sửa:</strong> ${file.name} (${sizeMB} MB) <span style="color: #4ade80;">✓ Đã sẵn sàng</span>`;
             logDiff(`Đã chọn File Đã Sửa: ${file.name} (${sizeMB} MB)`, 'info');
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                bufMod = e.target.result;
-                logDiff(`Đã nạp File Đã Sửa vào bộ nhớ RAM thành công.`, 'success');
-                checkDiffReady();
-            };
-            reader.onerror = () => {
-                logDiff(`Lỗi khi nạp File Đã Sửa!`, 'error');
-                checkDiffReady();
-            };
-            reader.readAsArrayBuffer(file);
+            checkDiffReady();
         }
 
-        function processDiff() {
-            if (!bufOrig || !bufMod) return alert("Vui lòng nạp đủ 2 file!");
+        function readBlobAsArrayBuffer(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        async function processDiff() {
+            if (!fileOrigObj || !fileModObj) return alert("Vui lòng chọn cả 2 file trước!");
 
             consoleLogDiff.innerHTML = '';
-            logDiff(`🚀 BẮT ĐẦU SO SÁNH CÁC KHU VỰC BYTE THAY ĐỔI...`, 'info');
+            logDiff(`🚀 BẮT ĐẦU TIẾN TRÌNH SO SÁNH STREAMING (KHÔNG TRÀN RAM)...`, 'info');
 
             diffBtn.disabled = true;
+            document.getElementById('diffResultCard').style.display = 'none';
 
-            setTimeout(() => {
-                const u8Orig = new Uint8Array(bufOrig);
-                const u8Mod = new Uint8Array(bufMod);
-                const minLen = Math.min(u8Orig.length, u8Mod.length);
+            const progressContainer = document.getElementById('diffProgressContainer');
+            const progressBar = document.getElementById('diffProgressBar');
+            const progressPercent = document.getElementById('diffProgressPercent');
+            const progressLabel = document.getElementById('diffProgressLabel');
 
-                logDiff(`Kích thước: File Gốc = ${u8Orig.length} bytes | File Đã Sửa = ${u8Mod.length} bytes`, 'info');
-                if (u8Orig.length !== u8Mod.length) {
-                    logDiff(`⚠️ Cảnh báo: Kích thước 2 file lệch nhau! So sánh trong phạm vi ${minLen} bytes đầu tiên.`, 'warning');
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressPercent.innerText = '0%';
+
+            const totalSize = Math.min(fileOrigObj.size, fileModObj.size);
+            logDiff(`Kích thước: File Gốc = ${(fileOrigObj.size / (1024*1024)).toFixed(2)} MB | File Đã Sửa = ${(fileModObj.size / (1024*1024)).toFixed(2)} MB`, 'info');
+
+            if (fileOrigObj.size !== fileModObj.size) {
+                logDiff(`⚠️ Cảnh báo: Kích thước 2 file khác nhau! So sánh trong phạm vi ${(totalSize / (1024*1024)).toFixed(2)} MB.`, 'warning');
+            }
+
+            const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunk per iteration
+            let currentOffset = 0;
+            let rawBlocks = [];
+            const startTime = performance.now();
+
+            try {
+                while (currentOffset < totalSize) {
+                    const nextOffset = Math.min(currentOffset + CHUNK_SIZE, totalSize);
+                    const pct = Math.floor((nextOffset / totalSize) * 100);
+
+                    progressBar.style.width = `${pct}%`;
+                    progressPercent.innerText = `${pct}%`;
+                    progressLabel.innerText = `Đang quét phân đoạn ${(currentOffset / (1024*1024)).toFixed(0)} MB - ${(nextOffset / (1024*1024)).toFixed(0)} MB / ${(totalSize / (1024*1024)).toFixed(0)} MB...`;
+
+                    // Slice small 10MB blobs (RAM usage stays ~20MB max!)
+                    const sliceOrig = fileOrigObj.slice(currentOffset, nextOffset);
+                    const sliceMod = fileModObj.slice(currentOffset, nextOffset);
+
+                    const [bufOrigChunk, bufModChunk] = await Promise.all([
+                        readBlobAsArrayBuffer(sliceOrig),
+                        readBlobAsArrayBuffer(sliceMod)
+                    ]);
+
+                    const u8OrigChunk = new Uint8Array(bufOrigChunk);
+                    const u8ModChunk = new Uint8Array(bufModChunk);
+
+                    // Scan 10MB chunk with 32-bit fast loop
+                    const chunkDiffs = scanChunkDiffs(u8OrigChunk, u8ModChunk, currentOffset);
+                    rawBlocks.push(...chunkDiffs);
+
+                    currentOffset = nextOffset;
+
+                    // Yield to main thread for smooth progress bar update
+                    await new Promise(r => setTimeout(r, 10));
                 }
 
-                const startTime = performance.now();
-
-                // Fast Uint32 scanner + group contiguous differences
-                const u32Orig = new Uint32Array(bufOrig, 0, Math.floor(minLen / 4));
-                const u32Mod = new Uint32Array(bufMod, 0, Math.floor(minLen / 4));
-                const len32 = u32Orig.length;
-
-                const rawBlocks = [];
-                let startByte = -1;
-                let endByte = -1;
-                const MAX_GAP = 16;
-
-                for (let i = 0; i < len32; i++) {
-                    if (u32Orig[i] !== u32Mod[i]) {
-                        const p1 = i * 4;
-                        const p2 = p1 + 4;
-                        if (startByte === -1) {
-                            startByte = p1;
-                            endByte = p2;
-                        } else if (p1 - endByte <= MAX_GAP) {
-                            endByte = p2;
-                        } else {
-                            rawBlocks.push({ start: startByte, end: endByte });
-                            startByte = p1;
-                            endByte = p2;
-                        }
-                    }
-                }
-                if (startByte !== -1) {
-                    rawBlocks.push({ start: startByte, end: endByte });
-                }
-
-                const tailStart = len32 * 4;
-                for (let p = tailStart; p < minLen; p++) {
-                    if (u8Orig[p] !== u8Mod[p]) {
-                        rawBlocks.push({ start: p, end: p + 1 });
-                    }
-                }
-
-                // Refine trim byte boundaries
-                const finalBlocks = [];
-                for (let block of rawBlocks) {
-                    let s = block.start;
-                    let e = block.end;
-                    while (s < e && u8Orig[s] === u8Mod[s]) s++;
-                    while (e > s && u8Orig[e - 1] === u8Mod[e - 1]) e--;
-                    if (s < e) {
-                        if (finalBlocks.length > 0 && (s - finalBlocks[finalBlocks.length - 1].end <= MAX_GAP)) {
-                            finalBlocks[finalBlocks.length - 1].end = e;
-                        } else {
-                            finalBlocks.push({ start: s, end: e });
-                        }
-                    }
-                }
-
+                // Merge contiguous byte blocks across chunk boundaries
+                const finalBlocks = mergeAdjacentBlocks(rawBlocks, u8OrigChunk => {}, u8ModChunk => {});
                 const endTime = performance.now();
-                const duration = ((endTime - startTime) / 1000).toFixed(3);
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
 
-                logDiff(`✅ So sánh hoàn tất trong ${duration}s! Phát hiện ${finalBlocks.length} vị trí Offset bị thay đổi.`, 'success');
+                logDiff(`✅ Đã so sánh xong toàn bộ file trong ${duration}s! Phát hiện ${finalBlocks.length} khu vực offset bị thay đổi.`, 'success');
 
-                renderDiffResults(u8Orig, u8Mod, finalBlocks);
+                // Read exact original/modified byte values for each diff block
+                await populateBlockBytesAndRender(finalBlocks, duration);
+
+            } catch (err) {
+                logDiff(`❌ Lỗi trong quá trình so sánh: ${err.message}`, 'error');
+            } finally {
                 diffBtn.disabled = false;
-            }, 50);
+            }
         }
 
-        function renderDiffResults(u8Orig, u8Mod, blocks) {
+        function scanChunkDiffs(u8Orig, u8Mod, chunkOffset) {
+            const minLen = Math.min(u8Orig.length, u8Mod.length);
+            const u32Orig = new Uint32Array(u8Orig.buffer, u8Orig.byteOffset, Math.floor(minLen / 4));
+            const u32Mod = new Uint32Array(u8Mod.buffer, u8Mod.byteOffset, Math.floor(minLen / 4));
+            const len32 = u32Orig.length;
+
+            const blocks = [];
+            let startByte = -1;
+            let endByte = -1;
+            const MAX_GAP = 16;
+
+            for (let i = 0; i < len32; i++) {
+                if (u32Orig[i] !== u32Mod[i]) {
+                    const p1 = i * 4;
+                    const p2 = p1 + 4;
+                    if (startByte === -1) {
+                        startByte = p1;
+                        endByte = p2;
+                    } else if (p1 - endByte <= MAX_GAP) {
+                        endByte = p2;
+                    } else {
+                        blocks.push({ start: startByte + chunkOffset, end: endByte + chunkOffset });
+                        startByte = p1;
+                        endByte = p2;
+                    }
+                }
+            }
+            if (startByte !== -1) {
+                blocks.push({ start: startByte + chunkOffset, end: endByte + chunkOffset });
+            }
+
+            const tailStart = len32 * 4;
+            for (let p = tailStart; p < minLen; p++) {
+                if (u8Orig[p] !== u8Mod[p]) {
+                    blocks.push({ start: p + chunkOffset, end: p + 1 + chunkOffset });
+                }
+            }
+
+            return blocks;
+        }
+
+        function mergeAdjacentBlocks(blocks, MAX_GAP = 16) {
+            if (blocks.length === 0) return [];
+            const merged = [{ start: blocks[0].start, end: blocks[0].end }];
+            for (let i = 1; i < blocks.length; i++) {
+                const prev = merged[merged.length - 1];
+                const curr = blocks[i];
+                if (curr.start - prev.end <= MAX_GAP) {
+                    prev.end = curr.end;
+                } else {
+                    merged.push({ start: curr.start, end: curr.end });
+                }
+            }
+            return merged;
+        }
+
+        async function populateBlockBytesAndRender(blocks, duration) {
+            logDiff(`Đang đọc mã Byte cho ${blocks.length} khu vực offset...`, 'info');
+
+            const resultBlocks = [];
+            for (let b of blocks) {
+                const sliceOrig = fileOrigObj.slice(b.start, b.end);
+                const sliceMod = fileModObj.slice(b.start, b.end);
+
+                const [bufO, bufM] = await Promise.all([
+                    readBlobAsArrayBuffer(sliceOrig),
+                    readBlobAsArrayBuffer(sliceMod)
+                ]);
+
+                const u8O = new Uint8Array(bufO);
+                const u8M = new Uint8Array(bufM);
+
+                // Trim exact matching bytes at start/end
+                let s = 0, e = u8O.length;
+                while (s < e && u8O[s] === u8M[s]) s++;
+                while (e > s && u8O[e - 1] === u8M[e - 1]) e--;
+
+                if (s < e) {
+                    const finalStart = b.start + s;
+                    const finalEnd = b.start + e;
+                    const origHex = Array.from(u8O.subarray(s, e)).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+                    const modHex = Array.from(u8M.subarray(s, e)).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+
+                    resultBlocks.push({
+                        start: finalStart,
+                        end: finalEnd,
+                        origHex,
+                        modHex,
+                        length: e - s
+                    });
+                }
+            }
+
+            leakedBlocksResult = resultBlocks;
+            renderDiffResults(resultBlocks);
+        }
+
+        function renderDiffResults(blocks) {
             const resultCard = document.getElementById('diffResultCard');
             const statsBadge = document.getElementById('diffStatsBadge');
             const textarea = document.getElementById('leakedTextarea');
@@ -961,26 +1042,20 @@
                 const b = blocks[i];
                 const hexOffset = `0x${b.start.toString(16).toUpperCase()}`;
 
-                const origSlice = u8Orig.subarray(b.start, b.end);
-                const modSlice = u8Mod.subarray(b.start, b.end);
-
-                const origHex = Array.from(origSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
-                const modHex = Array.from(modSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
-
-                const origHexFormatted = Array.from(origSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-                const modHexFormatted = Array.from(modSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-
-                const line = `${hexOffset}: ${modHex} // Original: ${origHex}`;
+                const line = `${hexOffset}: ${b.modHex} // Original: ${b.origHex}`;
                 leakedLines.push(line);
 
                 if (i < renderLimit) {
+                    const origHexFormatted = b.origHex.match(/.{1,2}/g)?.join(' ') || '';
+                    const modHexFormatted = b.modHex.match(/.{1,2}/g)?.join(' ') || '';
+
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${i + 1}</td>
                         <td><strong style="color: #60a5fa;">${hexOffset}</strong></td>
                         <td><span class="badge-orig">${origHexFormatted}</span></td>
                         <td><span class="badge-mod">${modHexFormatted}</span></td>
-                        <td>${b.end - b.start} B</td>
+                        <td>${b.length} B</td>
                     `;
                     tbody.appendChild(tr);
                 }
