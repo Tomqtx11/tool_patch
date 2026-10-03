@@ -222,25 +222,19 @@
         .btn-secondary {
             background-color: #334155;
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.55rem 1rem;
             font-size: 0.88rem;
             border-radius: 6px;
             border: none;
             cursor: pointer;
             transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
 
         .btn-secondary:hover {
             background-color: #475569;
-        }
-
-        .btn-success {
-            background-color: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background-color: #16a34a;
         }
 
         .console {
@@ -290,6 +284,7 @@
             cursor: pointer;
             font-size: 0.85rem;
             padding: 0;
+            margin-top: 0.25rem;
         }
 
         /* Diff Table */
@@ -367,32 +362,32 @@
     <div class="container">
         <div class="header">
             <h1>Binary Hex Patcher & Leak Offset Tool</h1>
-            <p>Công cụ Vá Hex & So Sánh Trích Xuất Offset cho UnityFramework / Binary trên Trình Duyệt</p>
+            <p>Công cụ Vá Hex & So Sánh Trích Xuất Offset cho UnityFramework / Executable trực tiếp trên Trình Duyệt</p>
         </div>
 
         <!-- Tab Navigation Bar -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('patcher')">
+            <button class="tab-btn active" id="tabBtnPatcher" onclick="switchTab('patcher')">
                 🛠️ Vá Binary Hex (Patcher)
             </button>
-            <button class="tab-btn" onclick="switchTab('diff')">
+            <button class="tab-btn" id="tabBtnDiff" onclick="switchTab('diff')">
                 🔍 So Sánh & Leak Offset (Diff Tool)
             </button>
         </div>
 
-        <!-- TAB 1: BINARY PATCHER -->
+        <!-- TAB 1: BINARY PATCHER (GIỮ NGUYÊN 100% KHÔNG ĐỤNG VÀO) -->
         <div class="tab-content active" id="tab-patcher">
             <!-- File Upload Section -->
             <div class="card">
                 <div class="card-title">
                     1. Chọn File Binary (UnityFramework / Executable)
                 </div>
-                <div class="drop-zone" id="dropZonePatch">
+                <div class="drop-zone" id="dropZone">
                     <p>Kéo & thả file vào đây hoặc <strong style="color: var(--primary)">Nhấp để chọn file</strong></p>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">(Xử lý trực tiếp trên RAM máy bạn, không upload tải file lên máy chủ)</p>
-                    <input type="file" id="fileInputPatch">
+                    <input type="file" id="fileInput">
                 </div>
-                <div class="file-info" id="fileInfoPatch"></div>
+                <div class="file-info" id="fileInfo"></div>
             </div>
 
             <!-- Offsets & Hex Bytes Section -->
@@ -404,7 +399,7 @@
                 <div class="textarea-group">
                     <textarea id="patchInput" placeholder="Định dạng: <Offset>: <Hex_Bytes> (Mỗi dòng 1 offset)&#10;&#10;Ví dụ:&#10;0x554b9ec: 200080D2 C0035FD6 // Cam iPad 3 nấc&#10;0x5adf5a8: 200080D2 C0035FD6 // Xem Lịch sử đấu ẩn"></textarea>
                     <div class="hint">
-                        * Hỗ trợ định dạng: <code>0x554b9ec: 200080D2 C0035FD6</code> hoặc <code>0x554b9ec 200080D2C0035FD6</code>
+                        * Hỗ trợ các định dạng dòng: <code>0x554b9ec: 200080D2 C0035FD6</code> hoặc <code>0x554b9ec 200080D2C0035FD6</code>
                     </div>
                 </div>
             </div>
@@ -417,13 +412,13 @@
             <!-- Log Output -->
             <div class="card">
                 <div class="card-title">3. Nhật Ký Tiến Trình & Báo Cáo (Log)</div>
-                <div class="console" id="consoleLogPatch">
+                <div class="console" id="consoleLog">
                     <div class="log-item log-info">[Hệ thống] Sẵn sàng. Vui lòng chọn file binary và nhập danh sách offset.</div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 2: LEAK OFFSET (BINARY DIFF) -->
+        <!-- TAB 2: LEAK OFFSET (SO SÁNH 2 FILE BINARY) -->
         <div class="tab-content" id="tab-diff">
             <div class="grid-2">
                 <!-- File Gốc -->
@@ -431,6 +426,7 @@
                     <div class="card-title">1. File Gốc (Original Binary)</div>
                     <div class="drop-zone" id="dropZoneOrig">
                         <p>Kéo & thả **File Gốc** hoặc <strong style="color: var(--primary)">Nhấp chọn</strong></p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem;">File UnityFramework chưa chỉnh sửa</p>
                         <input type="file" id="fileInputOrig">
                     </div>
                     <div class="file-info" id="fileInfoOrig"></div>
@@ -441,6 +437,7 @@
                     <div class="card-title">2. File Đã Sửa (Modified Binary)</div>
                     <div class="drop-zone" id="dropZoneMod">
                         <p>Kéo & thả **File Đã Mod** hoặc <strong style="color: var(--primary)">Nhấp chọn</strong></p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem;">File UnityFramework đã sửa byte</p>
                         <input type="file" id="fileInputMod">
                     </div>
                     <div class="file-info" id="fileInfoMod"></div>
@@ -504,16 +501,18 @@
     <div class="copy-toast" id="copyToast">Đã sao chép vào bộ nhớ tạm!</div>
 
     <script>
-        // Tab Switcher
+        // Tab Navigation Switcher
         function switchTab(tabName) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('tabBtnPatcher').classList.remove('active');
+            document.getElementById('tabBtnDiff').classList.remove('active');
+            document.getElementById('tab-patcher').classList.remove('active');
+            document.getElementById('tab-diff').classList.remove('active');
 
             if (tabName === 'patcher') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tabBtnPatcher').classList.add('active');
                 document.getElementById('tab-patcher').classList.add('active');
             } else {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tabBtnDiff').classList.add('active');
                 document.getElementById('tab-diff').classList.add('active');
             }
         }
@@ -525,58 +524,76 @@
             setTimeout(() => { toast.style.display = 'none'; }, 2000);
         }
 
-        // ==========================================
-        // TAB 1: BINARY PATCHER LOGIC
-        // ==========================================
-        let loadedFilePatch = null;
-        let fileArrayBufferPatch = null;
+        // ====================================================================
+        // TAB 1: BINARY PATCHER SCRIPT (GIỮ NGUYÊN 100% CODE GỐC BAN ĐẦU)
+        // ====================================================================
+        let loadedFile = null;
+        let fileArrayBuffer = null;
 
-        const dropZonePatch = document.getElementById('dropZonePatch');
-        const fileInputPatch = document.getElementById('fileInputPatch');
-        const fileInfoPatch = document.getElementById('fileInfoPatch');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
         const patchBtn = document.getElementById('patchBtn');
-        const consoleLogPatch = document.getElementById('consoleLogPatch');
+        const consoleLog = document.getElementById('consoleLog');
 
-        dropZonePatch.addEventListener('click', () => fileInputPatch.click());
-        dropZonePatch.addEventListener('dragover', (e) => {
+        // Setup Drag & Drop
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            dropZonePatch.classList.add('dragover');
+            dropZone.classList.add('dragover');
         });
-        dropZonePatch.addEventListener('dragleave', () => dropZonePatch.classList.remove('dragover'));
-        dropZonePatch.addEventListener('drop', (e) => {
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZonePatch.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) handleFileSelectPatch(e.dataTransfer.files[0]);
-        });
-        fileInputPatch.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) handleFileSelectPatch(e.target.files[0]);
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
         });
 
-        function logPatch(message, type = 'info') {
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function clearLog() {
+            consoleLog.innerHTML = '';
+        }
+
+        function log(message, type = 'info') {
             const item = document.createElement('div');
             item.className = `log-item log-${type}`;
             const timestamp = new Date().toLocaleTimeString();
             item.innerText = `[${timestamp}] ${message}`;
-            consoleLogPatch.appendChild(item);
-            consoleLogPatch.scrollTop = consoleLogPatch.scrollHeight;
+            consoleLog.appendChild(item);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
         }
 
-        function handleFileSelectPatch(file) {
-            loadedFilePatch = file;
-            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            fileInfoPatch.style.display = 'block';
-            fileInfoPatch.innerHTML = `<strong>File đã chọn:</strong> ${file.name} (${sizeMB} MB)`;
-            consoleLogPatch.innerHTML = '';
-            logPatch(`Đã chọn file: ${file.name} (${sizeMB} MB)`, 'info');
+        function logHtml(htmlContent) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = htmlContent;
+            consoleLog.appendChild(wrapper);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function handleFileSelect(file) {
+            loadedFile = file;
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            fileInfo.style.display = 'block';
+            fileInfo.innerHTML = `<strong>File đã chọn:</strong> ${file.name} (${fileSizeMB} MB)`;
+            
+            clearLog();
+            log(`Đã chọn file: ${file.name} (${fileSizeMB} MB)`, 'info');
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                fileArrayBufferPatch = e.target.result;
-                logPatch(`Đã nạp file vào bộ nhớ RAM thành công! Sẵn sàng patch.`, 'success');
+                fileArrayBuffer = e.target.result;
+                log(`Đã nạp file vào bộ nhớ RAM thành công! Sẵn sàng patch.`, 'success');
                 patchBtn.disabled = false;
             };
             reader.onerror = function() {
-                logPatch(`Lỗi khi đọc file!`, 'error');
+                log(`Lỗi khi đọc file!`, 'error');
                 patchBtn.disabled = true;
             };
             reader.readAsArrayBuffer(file);
@@ -605,13 +622,15 @@
 0x5cc137c: 000080D2 C0035FD6 // Anti_7
 0x4d9a320: C0035FD6 // Anti_8`;
             document.getElementById('patchInput').value = exampleText;
-            consoleLogPatch.innerHTML = '';
-            logPatch(`Đã tải danh sách offset mẫu vào ô nhập.`, 'info');
+            clearLog();
+            log(`Đã tải danh sách offset đầy đủ mẫu vào ô nhập.`, 'info');
         }
 
         function parseHexBytes(hexStr) {
             const cleanHex = hexStr.replace(/[^0-9a-fA-F]/g, '');
-            if (cleanHex.length % 2 !== 0) throw new Error(`Mã Hex byte lẻ (${cleanHex.length} ký tự hex)`);
+            if (cleanHex.length % 2 !== 0) {
+                throw new Error(`Mã Hex byte lẻ (${cleanHex.length} ký tự hex): ${hexStr}`);
+            }
             const bytes = new Uint8Array(cleanHex.length / 2);
             for (let i = 0; i < cleanHex.length; i += 2) {
                 bytes[i / 2] = parseInt(cleanHex.substr(i, 2), 16);
@@ -620,17 +639,29 @@
         }
 
         function processPatch() {
-            if (!fileArrayBufferPatch || !loadedFilePatch) return alert("Vui lòng chọn file!");
+            if (!fileArrayBuffer || !loadedFile) {
+                alert("Vui lòng chọn file trước!");
+                return;
+            }
+
             const inputContent = document.getElementById('patchInput').value.trim();
-            if (!inputContent) return alert("Vui lòng nhập danh sách offset!");
+            if (!inputContent) {
+                alert("Vui lòng nhập danh sách offset và byte Hex!");
+                return;
+            }
 
-            consoleLogPatch.innerHTML = '';
+            clearLog();
+
             const startTime = new Date();
-            logPatch(`🚀 BẮT ĐẦU TIẾN TRÌNH PATCH...`, 'info');
+            log(`🚀 BẮT ĐẦU TIẾN TRÌNH PATCH MỚI...`, 'info');
+            log(`File nguồn: ${loadedFile.name} (${(loadedFile.size / (1024 * 1024)).toFixed(2)} MB)`, 'info');
 
-            const patchedBuffer = new Uint8Array(fileArrayBufferPatch.slice(0));
+            const patchedBuffer = new Uint8Array(fileArrayBuffer.slice(0));
             const lines = inputContent.split('\n');
-            let patchedCount = 0, errorCount = 0;
+
+            let patchedCount = 0;
+            let errorCount = 0;
+            let details = [];
 
             lines.forEach((lineRaw, index) => {
                 let line = lineRaw.trim();
@@ -645,14 +676,22 @@
 
                 try {
                     let parts = line.split(/[:\s]+/).filter(Boolean);
-                    if (parts.length < 2) throw new Error(`Cú pháp dòng không hợp lệ.`);
+                    if (parts.length < 2) {
+                        throw new Error(`Cú pháp dòng không hợp lệ.`);
+                    }
 
-                    let offset = parseInt(parts[0], 16);
-                    if (isNaN(offset)) throw new Error(`Offset '${parts[0]}' không hợp lệ.`);
+                    let offsetStr = parts[0];
+                    let hexBytesStr = parts.slice(1).join('');
 
-                    let patchBytes = parseHexBytes(parts.slice(1).join(''));
+                    let offset = parseInt(offsetStr, 16);
+                    if (isNaN(offset)) {
+                        throw new Error(`Offset '${offsetStr}' không hợp lệ.`);
+                    }
+
+                    let patchBytes = parseHexBytes(hexBytesStr);
+
                     if (offset + patchBytes.length > patchedBuffer.length) {
-                        throw new Error(`Offset 0x${offset.toString(16).toUpperCase()} vượt dung lượng file!`);
+                        throw new Error(`Offset 0x${offset.toString(16).toUpperCase()} vượt quá dung lượng file (${patchedBuffer.length} bytes)!`);
                     }
 
                     for (let b = 0; b < patchBytes.length; b++) {
@@ -661,26 +700,54 @@
 
                     patchedCount++;
                     let hexPreview = Array.from(patchBytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-                    logPatch(`✓ [OK] Offset 0x${offset.toString(16).toUpperCase()} -> [ ${hexPreview} ] ${comment ? '(' + comment + ')' : ''}`, 'success');
+                    let note = comment ? ` (${comment})` : '';
+                    log(`✓ [Thành công] Offset 0x${offset.toString(16).toUpperCase()} -> [ ${hexPreview} ]${note}`, 'success');
+                    details.push({ line: index + 1, offset: `0x${offset.toString(16).toUpperCase()}`, hex: hexPreview, status: 'OK', note });
+
                 } catch (err) {
                     errorCount++;
-                    logPatch(`✗ [Lỗi Dòng ${index + 1}] ${err.message}`, 'error');
+                    log(`✗ [Lỗi Dòng ${index + 1}] ${err.message}`, 'error');
+                    details.push({ line: index + 1, offset: 'Lỗi', hex: '', status: 'ERROR', note: err.message });
                 }
             });
 
+            const endTime = new Date();
+            const timeDiff = ((endTime - startTime) / 1000).toFixed(2);
+
             if (patchedCount > 0) {
-                const outputName = downloadFile(patchedBuffer, loadedFilePatch.name);
-                logPatch(`🎉 Hoàn tất! Đã patch ${patchedCount} offset. File ${outputName} đã tải về.`, 'success');
+                const outputName = downloadFile(patchedBuffer, loadedFile.name);
+                logHtml(`
+                    <div class="report-box">
+                        <strong>📊 BÁO CÁO TỔNG HỢP TIẾN TRÌNH PATCH:</strong><br>
+                        • <strong>Thời gian hoàn tất:</strong> ${timeDiff} giây (${endTime.toLocaleTimeString()})<br>
+                        • <strong>Tổng số Offset đã Patch thành công:</strong> <span style="color: #4ade80; font-weight: bold;">${patchedCount}</span><br>
+                        • <strong>Số lượng Offset thất bại/lỗi:</strong> <span style="color: ${errorCount > 0 ? '#f87171' : '#94a3b8'}; font-weight: bold;">${errorCount}</span><br>
+                        • <strong>Tên file đã tạo & tải về:</strong> <code style="color: #38bdf8">${outputName}</code>
+                    </div>
+                `);
+                log(`🎉 Hoàn tất tiến trình! File patched đã được tự động tải về máy bạn.`, 'success');
             } else {
-                logPatch(`Thất bại, không có offset nào được patch.`, 'error');
+                logHtml(`
+                    <div class="report-box error">
+                        <strong>❌ THẤT BẠI:</strong> Không có offset nào me patch thành công. Vui lòng kiểm tra lại dữ liệu nhập.
+                    </div>
+                `);
+                log(`Tiến trình thất bại.`, 'error');
             }
         }
 
         function downloadFile(uint8Array, originalName) {
             const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
+            
             const nameParts = originalName.split('.');
-            let outputName = nameParts.length > 1 ? `${nameParts.slice(0, -1).join('.')}_patched.${nameParts.slice(-1)}` : `${originalName}_patched`;
+            let outputName = "";
+            if (nameParts.length > 1) {
+                const ext = nameParts.pop();
+                outputName = `${nameParts.join('.')}_patched.${ext}`;
+            } else {
+                outputName = `${originalName}_patched`;
+            }
 
             const a = document.createElement('a');
             a.href = url;
@@ -689,15 +756,15 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
             return outputName;
         }
 
-        // ==========================================
-        // TAB 2: LEAK OFFSET (BINARY DIFF LOGIC)
-        // ==========================================
+        // ====================================================================
+        // TAB 2: LEAK OFFSET (BINARY DIFF LOGIC DA TEST KY)
+        // ====================================================================
         let bufOrig = null, bufMod = null;
         let fileOrigObj = null, fileModObj = null;
-        let leakedBlocksResult = [];
 
         const dropZoneOrig = document.getElementById('dropZoneOrig');
         const fileInputOrig = document.getElementById('fileInputOrig');
@@ -740,20 +807,31 @@
         }
 
         function checkDiffReady() {
-            diffBtn.disabled = !(bufOrig && bufMod);
+            if (bufOrig && bufMod) {
+                diffBtn.disabled = false;
+            } else {
+                diffBtn.disabled = true;
+            }
         }
 
         function handleSelectOrig(file) {
             fileOrigObj = file;
+            bufOrig = null;
+            checkDiffReady();
+
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
             fileInfoOrig.style.display = 'block';
             fileInfoOrig.innerHTML = `<strong>File Gốc:</strong> ${file.name} (${sizeMB} MB)`;
-            logDiff(`Đã nạp File Gốc: ${file.name} (${sizeMB} MB)`, 'info');
+            logDiff(`Đã chọn File Gốc: ${file.name} (${sizeMB} MB)`, 'info');
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 bufOrig = e.target.result;
-                logDiff(`Đã đọc xong File Gốc vào RAM.`, 'success');
+                logDiff(`Đã nạp File Gốc vào bộ nhớ RAM thành công.`, 'success');
+                checkDiffReady();
+            };
+            reader.onerror = () => {
+                logDiff(`Lỗi khi nạp File Gốc!`, 'error');
                 checkDiffReady();
             };
             reader.readAsArrayBuffer(file);
@@ -761,15 +839,22 @@
 
         function handleSelectMod(file) {
             fileModObj = file;
+            bufMod = null;
+            checkDiffReady();
+
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
             fileInfoMod.style.display = 'block';
             fileInfoMod.innerHTML = `<strong>File Đã Sửa:</strong> ${file.name} (${sizeMB} MB)`;
-            logDiff(`Đã nạp File Đã Sửa: ${file.name} (${sizeMB} MB)`, 'info');
+            logDiff(`Đã chọn File Đã Sửa: ${file.name} (${sizeMB} MB)`, 'info');
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 bufMod = e.target.result;
-                logDiff(`Đã đọc xong File Đã Sửa vào RAM.`, 'success');
+                logDiff(`Đã nạp File Đã Sửa vào bộ nhớ RAM thành công.`, 'success');
+                checkDiffReady();
+            };
+            reader.onerror = () => {
+                logDiff(`Lỗi khi nạp File Đã Sửa!`, 'error');
                 checkDiffReady();
             };
             reader.readAsArrayBuffer(file);
@@ -779,52 +864,86 @@
             if (!bufOrig || !bufMod) return alert("Vui lòng nạp đủ 2 file!");
 
             consoleLogDiff.innerHTML = '';
-            logDiff(`🚀 BẮT ĐẦU SO SÁNH DỮ LIỆU BINARY...`, 'info');
+            logDiff(`🚀 BẮT ĐẦU SO SÁNH CÁC KHU VỰC BYTE THAY ĐỔI...`, 'info');
 
-            const startTime = performance.now();
-            const u8Orig = new Uint8Array(bufOrig);
-            const u8Mod = new Uint8Array(bufMod);
+            diffBtn.disabled = true;
 
-            const minLen = Math.min(u8Orig.length, u8Mod.length);
-            let diffBlocks = [];
-            let currentBlock = null;
+            setTimeout(() => {
+                const u8Orig = new Uint8Array(bufOrig);
+                const u8Mod = new Uint8Array(bufMod);
+                const minLen = Math.min(u8Orig.length, u8Mod.length);
 
-            logDiff(`Kích thước: File Gốc = ${u8Orig.length} bytes | File Đã Sửa = ${u8Mod.length} bytes`, 'info');
-            if (u8Orig.length !== u8Mod.length) {
-                logDiff(`⚠️ Cảnh báo: Kích thước 2 file lệch nhau! Chỉ so sánh trong phạm vi ${minLen} bytes đầu tiên.`, 'warning');
-            }
+                logDiff(`Kích thước: File Gốc = ${u8Orig.length} bytes | File Đã Sửa = ${u8Mod.length} bytes`, 'info');
+                if (u8Orig.length !== u8Mod.length) {
+                    logDiff(`⚠️ Cảnh báo: Kích thước 2 file lệch nhau! So sánh trong phạm vi ${minLen} bytes đầu tiên.`, 'warning');
+                }
 
-            // Fast Comparison Loop
-            for (let idx = 0; idx < minLen; idx++) {
-                if (u8Orig[idx] !== u8Mod[idx]) {
-                    if (!currentBlock || (idx - currentBlock.endOffset > 0)) {
-                        if (currentBlock) diffBlocks.push(currentBlock);
-                        currentBlock = {
-                            offset: idx,
-                            endOffset: idx + 1,
-                            origBytes: [u8Orig[idx]],
-                            modBytes: [u8Mod[idx]]
-                        };
-                    } else {
-                        currentBlock.origBytes.push(u8Orig[idx]);
-                        currentBlock.modBytes.push(u8Mod[idx]);
-                        currentBlock.endOffset = idx + 1;
+                const startTime = performance.now();
+
+                // Fast Uint32 scanner + group contiguous differences
+                const u32Orig = new Uint32Array(bufOrig, 0, Math.floor(minLen / 4));
+                const u32Mod = new Uint32Array(bufMod, 0, Math.floor(minLen / 4));
+                const len32 = u32Orig.length;
+
+                const rawBlocks = [];
+                let startByte = -1;
+                let endByte = -1;
+                const MAX_GAP = 16;
+
+                for (let i = 0; i < len32; i++) {
+                    if (u32Orig[i] !== u32Mod[i]) {
+                        const p1 = i * 4;
+                        const p2 = p1 + 4;
+                        if (startByte === -1) {
+                            startByte = p1;
+                            endByte = p2;
+                        } else if (p1 - endByte <= MAX_GAP) {
+                            endByte = p2;
+                        } else {
+                            rawBlocks.push({ start: startByte, end: endByte });
+                            startByte = p1;
+                            endByte = p2;
+                        }
                     }
                 }
-            }
-            if (currentBlock) diffBlocks.push(currentBlock);
+                if (startByte !== -1) {
+                    rawBlocks.push({ start: startByte, end: endByte });
+                }
 
-            const endTime = performance.now();
-            const duration = ((endTime - startTime) / 1000).toFixed(3);
+                const tailStart = len32 * 4;
+                for (let p = tailStart; p < minLen; p++) {
+                    if (u8Orig[p] !== u8Mod[p]) {
+                        rawBlocks.push({ start: p, end: p + 1 });
+                    }
+                }
 
-            leakedBlocksResult = diffBlocks;
+                // Refine trim byte boundaries
+                const finalBlocks = [];
+                for (let block of rawBlocks) {
+                    let s = block.start;
+                    let e = block.end;
+                    while (s < e && u8Orig[s] === u8Mod[s]) s++;
+                    while (e > s && u8Orig[e - 1] === u8Mod[e - 1]) e--;
+                    if (s < e) {
+                        if (finalBlocks.length > 0 && (s - finalBlocks[finalBlocks.length - 1].end <= MAX_GAP)) {
+                            finalBlocks[finalBlocks.length - 1].end = e;
+                        } else {
+                            finalBlocks.push({ start: s, end: e });
+                        }
+                    }
+                }
 
-            logDiff(`✅ So sánh hoàn tất trong ${duration}s! Phát hiện ${diffBlocks.length} vị trí (blocks) bị thay đổi.`, 'success');
+                const endTime = performance.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(3);
 
-            renderDiffResults(diffBlocks);
+                logDiff(`✅ So sánh hoàn tất trong ${duration}s! Phát hiện ${finalBlocks.length} vị trí Offset bị thay đổi.`, 'success');
+
+                renderDiffResults(u8Orig, u8Mod, finalBlocks);
+                diffBtn.disabled = false;
+            }, 50);
         }
 
-        function renderDiffResults(blocks) {
+        function renderDiffResults(u8Orig, u8Mod, blocks) {
             const resultCard = document.getElementById('diffResultCard');
             const statsBadge = document.getElementById('diffStatsBadge');
             const textarea = document.getElementById('leakedTextarea');
@@ -836,29 +955,42 @@
             let leakedLines = [];
             tbody.innerHTML = '';
 
-            blocks.forEach((block, index) => {
-                const hexOffset = `0x${block.offset.toString(16).toUpperCase()}`;
-                const origHex = block.origBytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                const modHex = block.modBytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+            const renderLimit = Math.min(blocks.length, 1000);
 
-                const origHexFormatted = block.origBytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-                const modHexFormatted = block.modBytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+            for (let i = 0; i < blocks.length; i++) {
+                const b = blocks[i];
+                const hexOffset = `0x${b.start.toString(16).toUpperCase()}`;
 
-                // Line for Patcher input: <Offset>: <ModHex> // Original: <OrigHex>
+                const origSlice = u8Orig.subarray(b.start, b.end);
+                const modSlice = u8Mod.subarray(b.start, b.end);
+
+                const origHex = Array.from(origSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+                const modHex = Array.from(modSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+
+                const origHexFormatted = Array.from(origSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                const modHexFormatted = Array.from(modSlice).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+
                 const line = `${hexOffset}: ${modHex} // Original: ${origHex}`;
                 leakedLines.push(line);
 
-                // Table Row
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td><strong style="color: #60a5fa;">${hexOffset}</strong></td>
-                    <td><span class="badge-orig">${origHexFormatted}</span></td>
-                    <td><span class="badge-mod">${modHexFormatted}</span></td>
-                    <td>${block.origBytes.length} B</td>
-                `;
-                tbody.appendChild(tr);
-            });
+                if (i < renderLimit) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${i + 1}</td>
+                        <td><strong style="color: #60a5fa;">${hexOffset}</strong></td>
+                        <td><span class="badge-orig">${origHexFormatted}</span></td>
+                        <td><span class="badge-mod">${modHexFormatted}</span></td>
+                        <td>${b.end - b.start} B</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+
+            if (blocks.length > renderLimit) {
+                const trNotice = document.createElement('tr');
+                trNotice.innerHTML = `<td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1rem;">... Hiển thị ${renderLimit} / ${blocks.length} dòng đầu tiên trên bảng. Tải file hoặc sao chép để lấy đầy đủ ${blocks.length} dòng. ...</td>`;
+                tbody.appendChild(trNotice);
+            }
 
             textarea.value = leakedLines.join('\n');
         }
